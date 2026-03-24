@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from cv2 import cv2
+import cv2  # Nhập thư viện xử lý ảnh OpenCV
 
 # 3D model points.
 model_points = np.array([
