@@ -40,3 +40,13 @@ class Calibrator:
         Trả về tiến độ (Tỷ lệ phần trăm 0.0 -> 1.0) của quá trình đo đạc.
         """
         return len(self.ear_samples) / self.required_frames
+        
+    def reset(self):
+        """
+        Khởi động lại toàn bộ chu kỳ học (Clear data cũ)
+        """
+        self.ear_samples.clear()
+        self.mar_samples.clear()
+        self.is_calibrated = False
+        self.ear_baseline = 0.0
+        self.mar_baseline = 0.0

@@ -50,9 +50,21 @@ image_points = np.array([
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 (mStart, mEnd) = (49, 68)
 
+# Hỗ trợ tự động căn chỉnh lại chu kỳ học theo thời gian
+last_calibration_time = time.time()
+calibration_interval = 300 # Khoảng cách lặp vòng học: 300 giây (5 phút)
+previous_state = "Normal"
+
 while True:
     frame = vs.read()
     frame = imutils.resize(frame, width=1024, height=576)
+
+    # Kiểm tra chu kỳ để tự động lặp lại quy trình học (Re-calibration)
+    current_time = time.time()
+    if calibrator.is_calibrated and (current_time - last_calibration_time > calibration_interval):
+        print(f"\n[HỆ THỐNG] Tự động kích hoạt lại chu kỳ học sinh trắc học sau mỗi {calibration_interval} giây!")
+        calibrator.reset()
+        last_calibration_time = current_time
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     size = gray.shape
 
@@ -136,6 +148,20 @@ while True:
             
             cv2.putText(frame, f"AI STATE: {state}", (350, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
+
+            # In cảnh báo ra Terminal khi có sự thay đổi trạng thái
+            if state != previous_state:
+                if state == "Drowsy":
+                    print("\n[NGUY HIỂM] TÀI XẾ ĐANG NGỦ GỤC (DROWSY)!")
+                elif state == "Distracted":
+                    print("\n[CẢNH BÁO] TÀI XẾ MẤT TẬP TRUNG (DISTRACTED)!")
+                elif state == "Yawning":
+                    print("\n[NHẮC NHỞ] TÀI XẾ ĐANG NGÁP (YAWNING) - CÓ DẤU HIỆU BUỒN NGỦ!")
+                elif state == "Talking":
+                    print("\n[THÔNG TIN] Tài xế đang nói chuyện (Talking).")
+                elif state == "Normal":
+                    print("\n[THÔNG TIN] Tài xế đã trở lại trạng thái BÌNH THƯỜNG (Normal).")
+                previous_state = state
 
     cv2.imshow("Smart AI DMS Architecture", frame)
     key = cv2.waitKey(1) & 0xFF
