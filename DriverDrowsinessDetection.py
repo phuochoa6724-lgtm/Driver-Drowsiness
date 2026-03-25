@@ -12,12 +12,12 @@ import numpy as np
 import threading
 from datetime import datetime
 import os
-from dotenv import load_dotenv  # Thư viện đọc biến môi trường từ file .env
+# from dotenv import load_dotenv  # Thư viện đọc biến môi trường từ file .env
 
 # Tự động nạp các biến môi trường từ file .env vào os.environ
-load_dotenv()
-from collections import deque
-from supabase import create_client, Client
+# load_dotenv()
+# from collections import deque
+# from supabase import create_client, Client
 
 # Các module Custom
 from EAR import eye_aspect_ratio
