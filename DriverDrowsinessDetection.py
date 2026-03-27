@@ -49,8 +49,8 @@ mStart, mEnd = 49, 68
 # Các biến quản lý thời gian
 frame_count = 0
 last_sync_time = time.time()
-last_calibration_time = time.time()
-calibration_interval = 60 # Tự động hiệu chuẩn lại sau mỗi 60 giây
+calibration_interval = 60 # (Đã vô hiệu hóa tự động recalibration theo yêu cầu)
+calibration_voice_played = False # Cờ kiểm soát việc phát âm thanh nhắc nhở
 
 # Buffer lưu trữ frame để xuất video cảnh báo (khoảng 2-4 giây)
 frame_buffer = deque(maxlen=60)
@@ -122,6 +122,11 @@ try:
         display_state, display_color = "Normal", (0,255,0)
         
         if not calibrator.is_calibrated:
+            # Phát âm thanh nhắc nhở lần đầu tiên khi bắt đầu calibration
+            if not calibration_voice_played:
+                alert_handler.play_calibration_reminder()
+                calibration_voice_played = True
+                
             # Giai đoạn HIỆU CHUẨN: Học các chỉ số mắt/miệng/đầu bình thường của Driver
             calibrator.update(ear, mar, p_raw)
             calibrator.update_face(np.array(face_encoder.compute_face_descriptor(frame, shape_obj)))
@@ -157,12 +162,7 @@ try:
                                    alert_handler.total_head_tilt_count, 
                                    alert_handler.total_eye_closed_time)).start()
             last_sync_time = time.time()
-            
-            # Tự động hiệu chuẩn lại sau một khoảng thời gian
-            if calibrator.is_calibrated and (time.time() - last_calibration_time > calibration_interval):
-                calibrator.reset()
-                last_calibration_time = time.time()
-                print("[INFO] Đang thực hiện Re-Calibration...")
+            # (Vô hiệu hóa logic Re-Calibration tự động ở đây)
 
         # Lưu frame vào buffer và hiển thị lên cửa sổ chính
         frame_buffer.append(frame.copy())

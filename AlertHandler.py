@@ -3,6 +3,7 @@ import os
 import time
 import threading
 from datetime import datetime
+import pygame
 
 class AlertHandler:
     """
@@ -24,6 +25,26 @@ class AlertHandler:
         self.total_yawn_count = 0 
         self.total_head_tilt_count = 0
         self.total_eye_closed_time = 0.0
+        
+        # Khởi tạo hệ thống âm thanh cảnh báo bằng pygame
+        try:
+            pygame.mixer.init()
+            self.sounds = {
+                "Drowsy": pygame.mixer.Sound("assets/drowsy.mp3"),
+                "Yawning": pygame.mixer.Sound("assets/yawning.mp3"),
+                "Distracted": pygame.mixer.Sound("assets/distracted.mp3"),
+                "Calibration": pygame.mixer.Sound("assets/calibration.mp3")
+            }
+            self.audio_channel = pygame.mixer.Channel(0)
+            self.audio_enabled = True
+        except Exception as e:
+            print(f"[!] Lỗi khởi tạo âm thanh: {e}")
+            self.audio_enabled = False
+
+    def play_calibration_reminder(self):
+        """Phát âm thanh nhắc nhở tài xế nhìn thẳng khi bắt đầu hiệu chuẩn."""
+        if self.audio_enabled and "Calibration" in self.sounds:
+            self.audio_channel.play(self.sounds["Calibration"])
 
     def process_state(self, state, frame, frame_buffer):
         """
@@ -44,11 +65,15 @@ class AlertHandler:
             cv2.putText(frame, f"+{duration:.1f}s", (140, 60), cv2.FONT_HERSHEY_DUPLEX, 0.6, (0,0,255), 1)
 
             # Kiểm tra ngưỡng để gửi cảnh báo (Drowsy > 1.5s, các loại khác > 3.0s)
-            limit = 1.5 if state == "Drowsy" else 3.0
+            limit = 1.5 
             if duration > limit and not self.alert_sent:
                 # Kích hoạt tiến trình lưu và gửi cảnh báo
                 self._trigger_alert(state, duration, frame, list(frame_buffer))
                 self.alert_sent = True
+                # Phát âm thanh cảnh báo bằng tiếng Việt
+                if self.audio_enabled and state in self.sounds:
+                    # Sử dụng audio_channel duy nhất để không bị phát đè âm thanh
+                    self.audio_channel.play(self.sounds[state])
         else:
             # Khi trạng thái trở về bình thường, kết thúc sự kiện hiện tại
             if self.current_event != "Normal":
