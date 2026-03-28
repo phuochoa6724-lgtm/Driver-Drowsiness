@@ -33,8 +33,8 @@ Dự án được thiết kế theo dạng module hóa để dễ dàng bảo tr
 | **`AlertHandler.py`** | Bộ quản lý sự kiện. Theo dõi thời gian, ghi hình MP4 và kích hoạt cảnh báo âm thanh. |
 | **`Calibration.py`** | Hiệu chuẩn các chỉ số cá nhân hóa (Baseline) cho từng tài xế. |
 | **`PredictMaker.py`** | Core AI: Sử dụng mô hình TFLite (hoặc thuật toán Heuristic fallback) để phân loại trạng thái. |
-| **`EAR.py` & `MAR.py`** | Tính toán tỷ lệ mắt (Eye Aspect Ratio) và miệng (Mouth Aspect Ratio). |
-| **`HeadPose.py`** | Ước tính các góc quay của đầu (pitch, yaw, roll) để phát hiện nhìn lệch hướng. |
+| **`Features/EAR.py` & `MAR.py`** | Tính toán tỷ lệ mắt (Eye Aspect Ratio) và miệng (Mouth Aspect Ratio). |
+| **`Features/HeadPose.py`** | Ước tính các góc quay của đầu (pitch, yaw, roll) để phát hiện nhìn lệch hướng. |
 | **`UIHelper.py`** | Hiển thị Overlay thông tin, đồ thị trạng thái AI và đồng hồ lên màn hình. |
 
 ---

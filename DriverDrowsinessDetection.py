@@ -10,9 +10,9 @@ import threading
 from collections import deque
 
 # --- IMPORT CÁC MODULE CUSTOM CŨ ---
-from EAR import eye_aspect_ratio
-from MAR import mouth_aspect_ratio
-from HeadPose import getHeadTiltAndCoords
+from Features.EAR import eye_aspect_ratio
+from Features.MAR import mouth_aspect_ratio
+from Features.HeadPose import getHeadTiltAndCoords
 from Calibration import Calibrator
 from PredictMaker import DecisionMaker
 
