@@ -60,6 +60,9 @@ print("[INFO] Khởi động hệ thống Driver Monitoring System (DMS)...")
 vs = VideoStream(src=1).start()
 time.sleep(2.0)
 
+# Khởi tạo biến theo dõi khuôn mặt tài xế
+last_driver_rect = None
+
 try:
     while True:
         # --- BƯỚC 1: ĐỌC VÀ TIỀN XỬ LÝ FRAME ---
@@ -79,15 +82,32 @@ try:
             if len(rects) == 1: driver_rect = rects[0]
             else: ui.draw_warning_text(frame, "WAITING FOR DRIVER...")
         else:
-            if len(rects) == 1: driver_rect = rects[0]
+            if len(rects) == 1: 
+                driver_rect = rects[0]
+            elif len(rects) > 1 and frame_count % 30 == 0:
+                for r in rects:
+                    shape_tmp = predictor(gray, r)
+                    enc = np.array(face_encoder.compute_face_descriptor(frame, shape_tmp))
+                    if calibrator.is_driver(enc): 
+                        driver_rect = r
+                        break
             elif len(rects) > 1:
-                # Chỉ kiểm tra Face ID mỗi 30 frame để giảm tải CPU
-                if frame_count % 30 == 0:
+                # Tránh nhận nhầm người ngồi cạnh bằng cách chọn khuôn mặt gần vị trí tài xế cũ nhất
+                if last_driver_rect is not None:
+                    last_center = ((last_driver_rect.left() + last_driver_rect.right()) / 2, 
+                                   (last_driver_rect.top() + last_driver_rect.bottom()) / 2)
+                    min_dist = float('inf')
                     for r in rects:
-                        shape_tmp = predictor(gray, r)
-                        enc = np.array(face_encoder.compute_face_descriptor(frame, shape_tmp))
-                        if calibrator.is_driver(enc): driver_rect = r; break
-                else: driver_rect = rects[0]
+                        center = ((r.left() + r.right()) / 2, (r.top() + r.bottom()) / 2)
+                        dist = (center[0] - last_center[0])**2 + (center[1] - last_center[1])**2
+                        if dist < min_dist:
+                            min_dist = dist
+                            driver_rect = r
+                else:
+                    driver_rect = rects[0]
+
+        if driver_rect is not None:
+            last_driver_rect = driver_rect
 
         # --- BƯỚC 3: XỬ LÝ KHÍ KHÔNG THẤY KHUÔN MẶT (DISTRACTED) ---
         if driver_rect is None:
@@ -116,7 +136,7 @@ try:
         for idx, lm in enumerate([33, 8, 36, 45, 48, 54]):
             image_points[idx] = shape[lm]
         (h_deg, y_deg, p_raw, start_p, end_p, end_p2) = getHeadTiltAndCoords(gray.shape, image_points, frame_height)
-        pitch = h_deg[0] if h_deg else 0.0
+        pitch = h_deg[0] if len(h_deg) > 0 else 0.0
 
         # --- BƯỚC 5: PHÂN LOẠI TRẠNG THÁI AI (CALIBRATION HOẶC PREDICTION) ---
         display_state, display_color = "Normal", (0,255,0)
@@ -155,12 +175,14 @@ try:
                          pitch)
         
         # --- BƯỚC 8: ĐỒNG BỘ DỮ LIỆU VỚI BACKEND (ĐỊNH KỲ) ---
-        if (time.time() - last_sync_time) > 60:
+        if (time.time() - last_sync_time) > 30:
             # Chạy thread ngầm để không làm trễ Camera
             threading.Thread(target=backend.update_trip_analytics, 
                              args=(alert_handler.total_yawn_count, 
                                    alert_handler.total_head_tilt_count, 
-                                   alert_handler.total_eye_closed_time)).start()
+                                   alert_handler.total_eye_closed_time,
+                                   alert_handler.total_drowsy_count,
+                                   alert_handler.total_distracted_count)).start()
             last_sync_time = time.time()
             # (Vô hiệu hóa logic Re-Calibration tự động ở đây)
 
@@ -171,6 +193,13 @@ try:
 
 finally:
     # --- GIẢI PHÓNG TÀI NGUYÊN ---
-    print("[INFO] Đang dừng hệ thống...")
+    print("[INFO] Đang dừng hệ thống và đóng hành trình...")
+    # Gửi dữ liệu cuối cùng chuẩn bị kết thúc
+    backend.close_session(alert_handler.total_yawn_count, 
+                          alert_handler.total_head_tilt_count, 
+                          alert_handler.total_eye_closed_time,
+                          alert_handler.total_drowsy_count,
+                          alert_handler.total_distracted_count)
+                          
     cv2.destroyAllWindows()
     vs.stop()

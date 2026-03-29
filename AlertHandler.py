@@ -20,10 +20,13 @@ class AlertHandler:
         self.current_event = "Normal"
         self.start_time = None
         self.alert_sent = False
+        self.normal_grace_start = None  # Cờ châm chước (Grace period) để tránh ngắt quãng nhiễu (flickering)
         
         # Thống kê tích lũy của toàn bộ hành trình
         self.total_yawn_count = 0 
         self.total_head_tilt_count = 0
+        self.total_drowsy_count = 0
+        self.total_distracted_count = 0
         self.total_eye_closed_time = 0.0
         
         # Khởi tạo hệ thống âm thanh cảnh báo bằng pygame
@@ -46,13 +49,43 @@ class AlertHandler:
         if self.audio_enabled and "Calibration" in self.sounds:
             self.audio_channel.play(self.sounds["Calibration"])
 
+    def _reset_event(self):
+        """Reset các biến trạng thái về mặc định."""
+        self.current_event = "Normal"
+        self.start_time = None
+        self.alert_sent = False
+
+    def _end_current_event(self):
+        """Xử lý kết thúc sự kiện hiện tại và cập nhật thống kê."""
+        if self.current_event != "Normal" and self.start_time is not None:
+            duration = time.time() - self.start_time
+            print(f"[#] KẾT THÚC SỰ KIỆN: {self.current_event} ({duration:.1f}s)")
+            
+            # Cập nhật số liệu tích lũy CHỈ KHI sự kiện đã đạt ngưỡng cảnh báo (alert đã được gửi)
+            if self.alert_sent:
+                if self.current_event == "Drowsy": 
+                    self.total_eye_closed_time += duration
+                    self.total_drowsy_count += 1
+                elif self.current_event == "Yawning": self.total_yawn_count += 1
+                elif self.current_event == "Distracted": 
+                    self.total_head_tilt_count += 1
+                    self.total_distracted_count += 1
+            
+            self._reset_event()
+
     def process_state(self, state, frame, frame_buffer):
         """
         Xử lý trạng thái từ AI trả về để quản lý vòng đời sự kiện (Bắt đầu -> Gửi cảnh báo -> Kết thúc).
+        Tích hợp cơ chế Grace Period (Ngưỡng châm chước) để chống ngắt quãng do nhiễu.
         """
         if state not in ["Normal", "Talking"]:
-            # Nếu bắt đầu một trạng thái cảnh báo mới (Drowsy, Distracted, Yawning)
+            self.normal_grace_start = None  # Xóa cờ châm chước (Grace period) nếu có
+            
             if self.current_event != state:
+                # Nếu đang ở một trạng thái bất thường khác, cần kết thúc nó trước
+                if self.current_event not in ["Normal", "Talking"] and self.current_event != "None":
+                    self._end_current_event()
+                    
                 self.current_event = state
                 self.start_time = time.time()
                 self.alert_sent = False
@@ -65,7 +98,9 @@ class AlertHandler:
             cv2.putText(frame, f"+{duration:.1f}s", (140, 60), cv2.FONT_HERSHEY_DUPLEX, 0.6, (0,0,255), 1)
 
             # Kiểm tra ngưỡng để gửi cảnh báo (Drowsy > 1.5s, các loại khác > 3.0s)
-            limit = 1.5 
+            limits = {"Yawning": 1.0, "Drowsy": 1.5, "Distracted": 2.0}
+            limit = limits.get(state, 3.0)
+            
             if duration > limit and not self.alert_sent:
                 # Kích hoạt tiến trình lưu và gửi cảnh báo
                 self._trigger_alert(state, duration, frame, list(frame_buffer))
@@ -75,20 +110,19 @@ class AlertHandler:
                     # Sử dụng audio_channel duy nhất để không bị phát đè âm thanh
                     self.audio_channel.play(self.sounds[state])
         else:
-            # Khi trạng thái trở về bình thường, kết thúc sự kiện hiện tại
-            if self.current_event != "Normal":
-                duration = time.time() - self.start_time
-                print(f"[#] KẾT THÚC SỰ KIỆN: {self.current_event} ({duration:.1f}s)")
+            # Khi trạng thái trở về bình thường, sử dụng Grace Period để xem có phải do nhấp nháy không
+            if self.current_event not in ["Normal", "Talking"]:
+                if self.normal_grace_start is None:
+                    self.normal_grace_start = time.time()
                 
-                # Cập nhật số liệu tích lũy tùy theo loại sự kiện
-                if self.current_event == "Drowsy": self.total_eye_closed_time += duration
-                elif self.current_event == "Yawning": self.total_yawn_count += 1
-                elif self.current_event == "Distracted": self.total_head_tilt_count += 1
-                
-                # Reset các biến trạng thái
+                # Cần duy trì trạng thái Normal/Talking > 0.3s mới thực sự kết thúc sự kiện cũ
+                if (time.time() - self.normal_grace_start) > 0.3:
+                    self._end_current_event()
+                    self.current_event = "Normal"
+                    self.normal_grace_start = None
+            else:
                 self.current_event = "Normal"
-                self.start_time = None
-                self.alert_sent = False
+                self.normal_grace_start = None
 
     def _trigger_alert(self, event_type, duration, current_frame, frames):
         """Kích hoạt việc lưu file và gửi lên backend (chạy ngầm)."""

@@ -95,4 +95,3 @@ def getHeadTiltAndCoords(size, image_points, frame_height):
     ending_point_alternate = (ending_point[0], frame_height // 2)
 
     return head_tilt_degree, yaw_degree, pitch_raw_degree, starting_point, ending_point, ending_point_alternate
-

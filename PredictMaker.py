@@ -165,6 +165,18 @@ class DecisionMaker:
         # Quy tắc 4: Góc chéo (nhìn chéo về phía không phải đường) → Distracted
         elif abs(current_yaw) > 30.0 and (current_pitch_raw < -20.0 or current_pitch_raw > 15.0):
             state = "Distracted"
+        
+        # Quy tắc 5: Tránh nhấp nháy trạng thái Ngáp (Hysteresis/Ngưỡng trễ)
+        # Giúp người dùng khi "há to miệng giữ nguyên" sẽ không bị chập chờn
+        last_common = "Normal"
+        if len(self.state_history) > 0:
+            last_common = max(set(self.state_history), key=list(self.state_history).count)
+        
+        current_mar = self.mar_buffer[-1] if self.mar_buffer else 0.0
+        yawning_threshold = 0.20 if last_common == "Yawning" else 0.25
+                
+        if current_mar > yawning_threshold:
+            state = "Yawning"
             
         # 4. BỘ LỌC LÀM MƯỢT (Smoothing): Majority Voting
         # Lưu trạng thái thô vào lịch sử
