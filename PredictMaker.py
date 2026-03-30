@@ -26,8 +26,8 @@ class DecisionMaker:
         self.yaw_buffer = deque(maxlen=window_size)      # Góc quay ngang đầu (trái/phải)
         self.pitch_raw_buffer = deque(maxlen=window_size)  # Góc pitch thô có dấu (để phân biệt nhìn lên/xuống)
         
-        # BỘ LỌC LÀM MƯỢT (Smoothing): Lưu lịch sử 15 trạng thái gần nhất để lấy số đông
-        self.smoothing_window = 15
+        # BỘ LỌC LÀM MƯỢT (Smoothing): Lưu lịch sử 5 trạng thái gần nhất để lấy số đông (do đã chạy Frame Skipping)
+        self.smoothing_window = 5
         self.state_history = deque(maxlen=self.smoothing_window)
         
         # Danh sách các nhãn phân loại đầu ra của hệ thống
