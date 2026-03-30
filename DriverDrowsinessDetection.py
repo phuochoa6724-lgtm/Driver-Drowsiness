@@ -63,6 +63,12 @@ time.sleep(2.0)
 # Khởi tạo biến theo dõi khuôn mặt tài xế
 last_driver_rect = None
 
+# --- BIẾN CACHE CHIẾN LƯỢC TỐI ƯU (FRAME SKIPPING) ---
+cached_driver_rect = None
+cached_display_state = "Normal"
+cached_display_color = (0, 255, 0)
+cached_pitch = 0.0
+
 try:
     while True:
         # --- BƯỚC 1: ĐỌC VÀ TIỀN XỬ LÝ FRAME ---
@@ -70,109 +76,114 @@ try:
         if frame is None: break
         frame = imutils.resize(frame, width=frame_width, height=frame_height)
         frame_count += 1
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        rects = detector(gray, 0)
         
         # Hiển thị đồng hồ thời gian thực
         ui.draw_clock(frame)
         
-        # --- BƯỚC 2: QUẢN LÝ ĐỊNH DANH DRIVER (IDENTIFICATION) ---
-        driver_rect = None
-        if not calibrator.is_calibrated:
-            if len(rects) == 1: driver_rect = rects[0]
-            else: ui.draw_warning_text(frame, "WAITING FOR DRIVER...")
-        else:
-            if len(rects) == 1: 
-                driver_rect = rects[0]
-            elif len(rects) > 1 and frame_count % 30 == 0:
-                for r in rects:
-                    shape_tmp = predictor(gray, r)
-                    enc = np.array(face_encoder.compute_face_descriptor(frame, shape_tmp))
-                    if calibrator.is_driver(enc): 
-                        driver_rect = r
-                        break
-            elif len(rects) > 1:
-                # Tránh nhận nhầm người ngồi cạnh bằng cách chọn khuôn mặt gần vị trí tài xế cũ nhất
-                if last_driver_rect is not None:
-                    last_center = ((last_driver_rect.left() + last_driver_rect.right()) / 2, 
-                                   (last_driver_rect.top() + last_driver_rect.bottom()) / 2)
-                    min_dist = float('inf')
-                    for r in rects:
-                        center = ((r.left() + r.right()) / 2, (r.top() + r.bottom()) / 2)
-                        dist = (center[0] - last_center[0])**2 + (center[1] - last_center[1])**2
-                        if dist < min_dist:
-                            min_dist = dist
-                            driver_rect = r
-                else:
+        # TỐI ƯU HÓA: Chỉ xử lý AI trên mỗi 3 khung hình (Frame Skipping) để nhẹ CPU Jetson Nano
+        process_this_frame = (frame_count % 3 == 0)
+
+        if process_this_frame:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            rects = detector(gray, 0)
+            
+            # --- BƯỚC 2: QUẢN LÝ ĐỊNH DANH DRIVER (IDENTIFICATION) ---
+            driver_rect = None
+            if not calibrator.is_calibrated:
+                if len(rects) == 1: driver_rect = rects[0]
+                else: ui.draw_warning_text(frame, "WAITING FOR DRIVER...")
+            else:
+                if len(rects) == 1: 
                     driver_rect = rects[0]
+                elif len(rects) > 1 and frame_count % 30 == 0:
+                    for r in rects:
+                        shape_tmp = predictor(gray, r)
+                        enc = np.array(face_encoder.compute_face_descriptor(frame, shape_tmp))
+                        if calibrator.is_driver(enc): 
+                            driver_rect = r
+                            break
+                elif len(rects) > 1:
+                    # Tránh nhận nhầm người ngồi cạnh bằng cách chọn khuôn mặt gần vị trí tài xế cũ nhất
+                    if last_driver_rect is not None:
+                        last_center = ((last_driver_rect.left() + last_driver_rect.right()) / 2, 
+                                       (last_driver_rect.top() + last_driver_rect.bottom()) / 2)
+                        min_dist = float('inf')
+                        for r in rects:
+                            center = ((r.left() + r.right()) / 2, (r.top() + r.bottom()) / 2)
+                            dist = (center[0] - last_center[0])**2 + (center[1] - last_center[1])**2
+                            if dist < min_dist:
+                                min_dist = dist
+                                driver_rect = r
+                    else:
+                        driver_rect = rects[0]
 
-        if driver_rect is not None:
-            last_driver_rect = driver_rect
+            if driver_rect is not None:
+                last_driver_rect = driver_rect
+                cached_driver_rect = driver_rect
+            else:
+                cached_driver_rect = None
 
-        # --- BƯỚC 3: XỬ LÝ KHÍ KHÔNG THẤY KHUÔN MẶT (DISTRACTED) ---
-        if driver_rect is None:
-            if calibrator.is_calibrated:
-                # Ghi nhận trạng thái mất tập trung (Distracted) khi không thấy mặt
-                alert_handler.process_state("Distracted", frame, frame_buffer)
-                if alert_handler.current_event == "Distracted":
-                    dur = time.time() - alert_handler.start_time
-                    ui.draw_warning_text(frame, f"Distracted: {dur:.1f}s")
-            
-            # Cập nhật buffer và tiếp tục vòng lặp
-            frame_buffer.append(frame.copy())
-            cv2.imshow("DMS", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"): break
-            continue
-        
-        # --- BƯỚC 4: TRÍCH XUẤT ĐẶC TRƯNG KHUÔN MẶT ---
-        shape_obj = predictor(gray, driver_rect)
-        shape = face_utils.shape_to_np(shape_obj)
-        
-        # Tính toán EAR (Mắt) và MAR (Miệng)
-        ear = (eye_aspect_ratio(shape[lStart:lEnd]) + eye_aspect_ratio(shape[rStart:rEnd])) / 2.0
-        mar = mouth_aspect_ratio(shape[mStart:mEnd])
-        
-        # Trích xuất góc cúi đầu (Head Pose) từ các điểm mốc
-        for idx, lm in enumerate([33, 8, 36, 45, 48, 54]):
-            image_points[idx] = shape[lm]
-        (h_deg, y_deg, p_raw, start_p, end_p, end_p2) = getHeadTiltAndCoords(gray.shape, image_points, frame_height)
-        pitch = h_deg[0] if len(h_deg) > 0 else 0.0
-
-        # --- BƯỚC 5: PHÂN LOẠI TRẠNG THÁI AI (CALIBRATION HOẶC PREDICTION) ---
-        display_state, display_color = "Normal", (0,255,0)
-        
-        if not calibrator.is_calibrated:
-            # Phát âm thanh nhắc nhở lần đầu tiên khi bắt đầu calibration
-            if not calibration_voice_played:
-                alert_handler.play_calibration_reminder()
-                calibration_voice_played = True
+            # --- BƯỚC 3 & 4: TRÍCH XUẤT ĐẶC TRƯNG KHUÔN MẶT ---
+            if cached_driver_rect is not None:
+                shape_obj = predictor(gray, cached_driver_rect)
+                shape = face_utils.shape_to_np(shape_obj)
                 
-            # Giai đoạn HIỆU CHUẨN: Học các chỉ số mắt/miệng/đầu bình thường của Driver
-            calibrator.update(ear, mar, p_raw)
-            calibrator.update_face(np.array(face_encoder.compute_face_descriptor(frame, shape_obj)))
-            ui.draw_calibration_progress(frame, calibrator.get_progress())
-        else:
-            # Giai đoạn NHẬN DIỆN: Đưa thông số vào mô hình AI để dự đoán trạng thái
-            decision_maker.update_buffer(ear, mar, pitch, y_deg, p_raw, 
-                                        calibrator.ear_baseline, 
-                                        calibrator.mar_baseline, 
-                                        calibrator.pitch_raw_baseline)
-            display_state = decision_maker.predict_state()
+                # Tính toán EAR (Mắt) và MAR (Miệng)
+                ear = (eye_aspect_ratio(shape[lStart:lEnd]) + eye_aspect_ratio(shape[rStart:rEnd])) / 2.0
+                mar = mouth_aspect_ratio(shape[mStart:mEnd])
+                
+                # Trích xuất góc cúi đầu (Head Pose) từ các điểm mốc
+                for idx, lm in enumerate([33, 8, 36, 45, 48, 54]):
+                    image_points[idx] = shape[lm]
+                (h_deg, y_deg, p_raw, start_p, end_p, end_p2) = getHeadTiltAndCoords(gray.shape, image_points, frame_height)
+                pitch = h_deg[0] if len(h_deg) > 0 else 0.0
+                cached_pitch = pitch
+                
+                # --- BƯỚC 5: PHÂN LOẠI TRẠNG THÁI AI (CALIBRATION HOẶC PREDICTION) ---
+                display_state, display_color = "Normal", (0,255,0)
+                
+                if not calibrator.is_calibrated:
+                    if not calibration_voice_played:
+                        alert_handler.play_calibration_reminder()
+                        calibration_voice_played = True
+                    calibrator.update(ear, mar, p_raw)
+                    calibrator.update_face(np.array(face_encoder.compute_face_descriptor(frame, shape_obj)))
+                else:
+                    decision_maker.update_buffer(ear, mar, pitch, y_deg, p_raw, 
+                                                calibrator.ear_baseline, 
+                                                calibrator.mar_baseline, 
+                                                calibrator.pitch_raw_baseline)
+                    display_state = decision_maker.predict_state()
+                    
+                    if display_state in ["Drowsy", "Distracted"]: display_color = (0,0,255)
+                    elif display_state == "Yawning": display_color = (0,165,255)
+                
+                cached_display_state = display_state
+                cached_display_color = display_color
+            else:
+                if calibrator.is_calibrated:
+                    cached_display_state = "Distracted"
+                    cached_display_color = (0, 0, 255)
+
+        # --- BƯỚC XỬ LÝ CHUNG MỖI FRAME (Đảm bảo FPS mượt và Video không đứt đoạn) ---
+        if not calibrator.is_calibrated:
+             ui.draw_calibration_progress(frame, calibrator.get_progress())
+             
+        # Quản lý cảnh báo & ghi hình liên tục mỗi frame
+        alert_handler.process_state(cached_display_state, frame, frame_buffer)
+        
+        # Cảnh báo text trên màn hình nếu không thấy tài xế
+        if cached_driver_rect is None and calibrator.is_calibrated and alert_handler.current_event == "Distracted":
+            dur = time.time() - alert_handler.start_time
+            ui.draw_warning_text(frame, f"Distracted: {dur:.1f}s")
             
-            # Cập nhật màu sắc UI theo mức độ nghiêm trọng
-            if display_state in ["Drowsy", "Distracted"]: display_color = (0,0,255)
-            elif display_state == "Yawning": display_color = (0,165,255)
-
-        # --- BƯỚC 6: QUẢN LÝ CẢNH BÁO & GHI HÌNH ---
-        alert_handler.process_state(display_state, frame, frame_buffer)
-
-        # --- BƯỚC 7: HIỂN THỊ THÔNG TIN UI OVERLAY ---
-        ui.draw_status(frame, display_state, display_color)
+        # Hình vẽ giao diện overlay thông tin
+        ui.draw_status(frame, cached_display_state, cached_display_color)
         ui.draw_analytics(frame, 
                          alert_handler.total_yawn_count, 
                          alert_handler.total_head_tilt_count, 
                          alert_handler.total_eye_closed_time, 
-                         pitch)
+                         cached_pitch)
         
         # --- BƯỚC 8: ĐỒNG BỘ DỮ LIỆU VỚI BACKEND (ĐỊNH KỲ) ---
         if (time.time() - last_sync_time) > 30:
