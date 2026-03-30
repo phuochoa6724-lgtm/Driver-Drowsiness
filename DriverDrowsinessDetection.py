@@ -49,7 +49,6 @@ mStart, mEnd = 49, 68
 # Các biến quản lý thời gian
 frame_count = 0
 last_sync_time = time.time()
-calibration_interval = 60 # (Đã vô hiệu hóa tự động recalibration theo yêu cầu)
 calibration_voice_played = False # Cờ kiểm soát việc phát âm thanh nhắc nhở
 
 # Buffer lưu trữ frame để xuất video cảnh báo (khoảng 2-4 giây)
@@ -57,7 +56,7 @@ frame_buffer = deque(maxlen=60)
 
 # Khởi động Camera
 print("[INFO] Khởi động hệ thống Driver Monitoring System (DMS)...")
-vs = VideoStream(src=1).start()
+vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
 # Khởi tạo biến theo dõi khuôn mặt tài xế
