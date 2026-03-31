@@ -59,8 +59,17 @@ Dự án được thiết kế theo dạng module hóa để dễ dàng bảo tr
 - Camera 720p hoặc cao hơn.
 
 ### 2. Cài đặt thư viện
+Do các quy định bảo mật của hệ thống mới (lỗi `externally-managed-environment`), bạn **cần sử dụng môi trường ảo (venv)**:
+
 ```bash
-pip install opencv-python numpy dlib pygame gtts supabase python-dotenv
+# Đầu tiên, tạo môi trường ảo (chỉ cần làm 1 lần)
+python3 -m venv venv
+
+# Sau đó, kích hoạt môi trường ảo (Chạy lại nếu bạn mở Terminal mới)
+source venv/bin/activate
+
+# Bây giờ bạn có thể cài đặt thư viện bình thường
+pip install opencv-python numpy dlib pygame gtts supabase python-dotenv tensorflow
 ```
 *(Nếu cài đặt `dlib` gặp lỗi, hãy đảm bảo bạn đã cài `cmake` và `build-essential` trên Linux)*.
 
@@ -80,14 +89,26 @@ Mở file `.env` và điền `SUPABASE_URL` và `SUPABASE_KEY` từ trang quản
 
 ## 🎮 Cách Chạy Ứng Dụng (Running)
 
-Mở terminal và chạy lệnh:
+Mở terminal, đảm bảo đã kích hoạt môi trường ảo đang được sử dụng trước khi chạy lệnh:
 ```bash
+source venv/bin/activate
 python3 DriverDrowsinessDetection.py
 ```
 
 **Quá trình hoạt động:**
 1.  **Giai đoạn 1 (Calibration - 100 khung hình đầu):** Hệ thống sẽ yêu cầu tài xế nhìn thẳng, mở mắt bình thường để học các chỉ số cơ bản.
 2.  **Giai đoạn 2 (Monitoring):** Sau khi hoàn tất hiệu chuẩn, hệ thống bắt đầu giám sát và đưa ra cảnh báo nếu phát hiện trạng thái ngủ gật (>1.5s), ngáp, hoặc mất tập trung.
+
+---
+
+## 🧠 Tự Động Huấn Luyện AI (Auto-Train Model)
+Dự án được trang bị thêm một bộ mã nguồn giúp bạn tự tạo ra mô hình học máy TensorFlow Lite. File này sẽ tự động sinh dữ liệu ảo (dựa trên thuật toán chuyên gia) và tiến hành huấn luyện AI.
+
+Mở terminal (đảm bảo đang dùng `venv`) và chạy lệnh sau:
+```bash
+python3 train_ai.py
+```
+Sau khoảng 10 giây, file AI mới nhất sẽ được xuất ra và lưu tự động vào `Models/dms_model_int8.tflite` với chuẩn máy học lượng tử hóa siêu nhẹ (INT8 Quantization) dành riêng cho ứng dụng thời gian thực.
 
 ---
 

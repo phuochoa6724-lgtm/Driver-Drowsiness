@@ -7,8 +7,13 @@ try:
     import tflite_runtime.interpreter as tflite
     TFLITE_AVAILABLE = True
 except ImportError:
-    TFLITE_AVAILABLE = False
-    print("[CẢNH BÁO] Không tìm thấy tflite_runtime. Sẽ sử dụng Thuật toán thay thế (Heuristic Fallback) để mô phỏng suy luận AI.")
+    try:
+        # Hỗ trợ chạy mô hình AI thông qua thư viện 'tensorflow' đầy đủ (phù hợp cho PC/Python 3.12+ không tải được tflite-runtime)
+        from tensorflow import lite as tflite
+        TFLITE_AVAILABLE = True
+    except ImportError:
+        TFLITE_AVAILABLE = False
+        print("[CẢNH BÁO] Không tìm thấy tflite_runtime hoặc tensorflow. Sẽ sử dụng Thuật toán thay thế (Heuristic Fallback) để mô phỏng suy luận AI.")
 
 class DecisionMaker:
     def __init__(self, window_size=60, model_path="Models/dms_model_int8.tflite"):

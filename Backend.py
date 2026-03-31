@@ -50,9 +50,9 @@ class BackendManager:
 
     def _get_metrics_payload(self, yawns, head_tilts, eye_time, drowsy_count, distracted_count=0):
         """Hàm trợ giúp để tính toán mức độ mệt mỏi và đóng gói dữ liệu."""
-        level = "An toàn"
-        if eye_time > 15.0 or yawns > 10: level = "Khẩn cấp"
-        elif eye_time > 3.0 or yawns > 2 or head_tilts > 3 or distracted_count > 3: level = "Cảnh báo"
+        level = "Safe"
+        if eye_time > 6.0 or yawns > 6 or head_tilts > 6 or distracted_count > 6: level = "Emergency"
+        elif eye_time > 3.0 or yawns > 3 or head_tilts > 3 or distracted_count > 3: level = "Warning"
         
         # Loại bỏ trường total_distracted khỏi payload tĩnh (tránh lỗi Schema DB PGRST204)
         return {
