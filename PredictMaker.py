@@ -31,9 +31,9 @@ class DecisionMaker:
         self.yaw_buffer = deque(maxlen=window_size)      # Góc quay ngang đầu (trái/phải)
         self.pitch_raw_buffer = deque(maxlen=window_size)  # Góc pitch thô có dấu (để phân biệt nhìn lên/xuống)
         
-        # BỘ LỌC LÀM MƯỢT (Smoothing): Lưu lịch sử 5 trạng thái gần nhất để lấy số đông
-        # (Giảm từ 15 xuống 5 để phù hợp với Jetson Nano có FPS thấp, giúp ngắt trạng thái nhanh hơn tầm 1-2s)
-        self.smoothing_window = 5
+        # BỘ LỌC LÀM MƯỢT (Smoothing): Lưu lịch sử 3 trạng thái gần nhất để lấy số đông
+        # (Giảm từ 5 xuống 3 để tính phản hồi của Jetson rơi vào mức cực nhanh ~0.5s)
+        self.smoothing_window = 3
         self.state_history = deque(maxlen=self.smoothing_window)
         
         # Danh sách các nhãn phân loại đầu ra của hệ thống

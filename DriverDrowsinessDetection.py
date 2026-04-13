@@ -37,7 +37,9 @@ face_encoder = dlib.face_recognition_model_v1('./dlib_shape_predictor/dlib_face_
 
 # Cấu hình logic AI DMS
 calibrator = Calibrator(required_frames=100) 
-decision_maker = DecisionMaker(window_size=30, model_path="Models/dms_model_int8.tflite")
+# Giảm window_size xuống 15 (tương đương ~2-3 giây trên Jetson Nano)
+# để tính trung bình cộng EAR nhanh hơn, giảm hẳn độ trễ cập nhật.
+decision_maker = DecisionMaker(window_size=15, model_path="Models/dms_model_int8.tflite")
 
 # Tham số luồng video
 frame_width, frame_height = 480, 480
