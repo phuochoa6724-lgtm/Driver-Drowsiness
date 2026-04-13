@@ -7,8 +7,13 @@ try:
     import tflite_runtime.interpreter as tflite
     TFLITE_AVAILABLE = True
 except ImportError:
-    TFLITE_AVAILABLE = False
-    print("[CẢNH BÁO] Không tìm thấy tflite_runtime. Sẽ sử dụng Thuật toán thay thế (Heuristic Fallback) để mô phỏng suy luận AI.")
+    try:
+        import tensorflow as tf
+        tflite = tf.lite
+        TFLITE_AVAILABLE = True
+    except ImportError:
+        TFLITE_AVAILABLE = False
+        print("[CẢNH BÁO] Không tìm thấy tflite_runtime hoặc tensorflow. Sẽ sử dụng Thuật toán thay thế (Heuristic Fallback) để mô phỏng suy luận AI.")
 
 class DecisionMaker:
     def __init__(self, window_size=60, model_path="Models/dms_model_int8.tflite"):
@@ -147,27 +152,10 @@ class DecisionMaker:
             # 2. Hoặc mô phỏng AI bằng quy tắc tĩnh toán học
             state = self._heuristic_fallback(features)
         
-        # 3. Luật cứng theo tiêu chuẩn CSGT (ưu tiên tuyệt đối, ghi đè kết quả model)
-        current_pitch = self.pitch_buffer[-1]
-        current_ear_delta = self.ear_buffer[-1]
-        current_yaw = self.yaw_buffer[-1] if self.yaw_buffer else 0.0
-        current_pitch_raw = self.pitch_raw_buffer[-1] if self.pitch_raw_buffer else 0.0
-        
-        # Quy tắc 1 (cao nhất): mắt sụp + gục đầu → Drowsy
-        if current_ear_delta < -0.1 and current_pitch > 20.0:
-            state = "Drowsy"
-        # Quy tắc 2: Quay ngang > 45° (vượt ngưỡng nhìn gương chiếu hậu) → Distracted
-        elif abs(current_yaw) > 45.0:
-            state = "Distracted"
-        # Quy tắc 3: Nhìn lên quá 40° hoặc xuống quá 30° → Distracted
-        elif current_pitch_raw < -40.0 or current_pitch_raw > 30.0:
-            state = "Distracted"
-        # Quy tắc 4: Góc chéo (nhìn chéo về phía không phải đường) → Distracted
-        elif abs(current_yaw) > 30.0 and (current_pitch_raw < -20.0 or current_pitch_raw > 15.0):
-            state = "Distracted"
-        
-        # Quy tắc 5: Tránh nhấp nháy trạng thái Ngáp (Hysteresis/Ngưỡng trễ)
-        # Giúp người dùng khi "há to miệng giữ nguyên" sẽ không bị chập chờn
+        # 3. Các luật cứng (hardcoded rules) ghi đè kết quả AI đã được loại bỏ 
+        # để tôn trọng hoàn toàn suy luận từ mô hình TensorFlow.
+        # Chỉ giữ lại cơ chế Hysteresis (Ngưỡng trễ) cho trạng thái Ngáp
+        # nhằm giúp người dùng khi "há to miệng giữ nguyên" sẽ không bị chập chờn.
         last_common = "Normal"
         if len(self.state_history) > 0:
             last_common = max(set(self.state_history), key=list(self.state_history).count)

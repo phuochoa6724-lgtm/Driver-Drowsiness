@@ -9,8 +9,10 @@
 - `gTTS`: (Tùy chọn) Dùng để tạo file âm thanh cảnh báo
 - `supabase`: Kết nối với cơ sở dữ liệu và Storage trên đám mây
 - `python-dotenv`: Quản lý biến môi trường bảo mật
+- `imutils`: Hỗ trợ các hàm xử lý ảnh OpenCV (resize, biến đổi khuôn mặt) tiện lợi hơn
+- `scipy`: Hỗ trợ tính toán khoảng cách vector để tính chỉ số EAR/MAR
 
 **Lệnh cài đặt tự động:**
 ```bash
-pip install opencv-python numpy dlib pygame gtts supabase python-dotenv
+pip install opencv-python numpy dlib pygame gtts supabase python-dotenv imutils scipy
 ```

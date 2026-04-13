@@ -57,7 +57,7 @@ frame_buffer = deque(maxlen=60)
 
 # Khởi động Camera
 print("[INFO] Khởi động hệ thống Driver Monitoring System (DMS)...")
-vs = VideoStream(src=1).start()
+vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
 # Khởi tạo biến theo dõi khuôn mặt tài xế

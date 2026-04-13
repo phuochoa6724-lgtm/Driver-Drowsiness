@@ -17,6 +17,7 @@ Hệ thống giám sát tài xế (DMS) sử dụng trí tuệ nhân tạo (AI) 
 *   **🗣️ Nhận Diện Nói Chuyện (Talking):** Phân loại hành động nói chuyện để phân tích mức độ tập trung.
 *   **🔊 Cảnh Báo Âm Thanh Tiếng Việt:** Phát thông báo bằng giọng nói tự nhiên (gTTS/PyGame) khi phát hiện nguy cơ.
 *   **🛡️ Nhận Diện Driver Duy Nhất:** Sử dụng Face Recognition (Dlib) để chỉ theo dõi đúng khuôn mặt của tài xế.
+*   **🧠 Xử Lý Dự Đoán Trí Tuệ Nhân Tạo (AI-Driven):** Ưu tiên hoàn toàn đầu ra từ mô hình học sâu (TensorFlow) thay vì sử dụng luật cứng để ghi đè kết quả, giúp hệ thống hoạt động ổn định và chính xác hơn trong các tình huống thực tế.
 *   **⚖️ Lọc Nhiễu Chống Nhấp Nháy (Anti-Flicker):** Áp dụng Hysteresis để tránh việc AI chập chờn khi tài xế giữ nguyên một trạng thái (Ví dụ: há miệng ngáp lâu không bị ngắt quãng).
 *   **☁️ Đồng Bộ Cloud (Supabase):** Tự động tải báo cáo, ảnh chụp bằng chứng và clip video 3 giây.
 *   **🛠️ Cá Nhân Hóa (Calibration):** Chế độ hiệu chuẩn tự động trong 100 khung hình đầu tiên.
@@ -60,7 +61,7 @@ Dự án được thiết kế theo dạng module hóa để dễ dàng bảo tr
 
 ### 2. Cài đặt thư viện
 ```bash
-pip install opencv-python numpy dlib pygame gtts supabase python-dotenv
+pip install opencv-python numpy dlib pygame gtts supabase python-dotenv imutils scipy
 ```
 *(Nếu cài đặt `dlib` gặp lỗi, hãy đảm bảo bạn đã cài `cmake` và `build-essential` trên Linux)*.
 
@@ -101,6 +102,34 @@ python3 DriverDrowsinessDetection.py
 6.  **Smooth:** Lọc nhiễu trạng thái bằng giải thuật "Majority Voting" qua 15 khung hình.
 7.  **Alert:** Nếu trạng thái nguy hiểm kéo dài, kích hoạt cảnh báo âm thanh và ghi hình.
 8.  **Sync:** Tải dữ liệu lên Supabase mỗi 60 giây.
+
+---
+
+## 🧠 Huấn Luyện Lại Mô Hình (Training AI)
+
+Dự án có hỗ trợ tự huấn luyện và chuyển đổi (Quantization) siêu nhẹ thành mô hình TFLite (INT8 8-bit) phù hợp chạy trên Jetson Nano.
+
+### Cấu trúc thư mục dữ liệu
+
+Lưu ảnh chuẩn bị huấn luyện vào:
+```
+Driver-Drowsiness-Detection/
+└── TrainAI/
+    ├── train/
+    │   ├── Open_Eyes/    # Thư mục ảnh mở mắt
+    │   └── Closed_Eyes/  # Thư mục ảnh nhắm mắt
+    └── train_model.py    # Kịch bản huấn luyện
+```
+
+### Cách chạy Script
+
+Yêu cầu cài đặt thêm `tensorflow` (Bạn nên tạo môi trường ảo riêng biệt để huấn luyện nếu cài trên máy tính cá nhân):
+```bash
+pip install tensorflow
+cd TrainAI
+python3 train_model.py
+```
+Sau khi hoàn tất, file TFLite được xuất ra tại `Models/eye_state_int8.tflite` sẵn sàng để nhúng vào hệ thống Edge.
 
 ---
 
