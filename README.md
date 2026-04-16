@@ -1,153 +1,80 @@
-# 🚗 Driver Monitoring System (DMS) - Hệ Thống Giám Sát Tài Xế Thông Minh 🤖
+# 🚘 Driver Drowsiness Detection (DMS)
+> Hệ thống giám sát tài xế AI thời gian thực - Cảnh báo thông minh, bảo vệ hành trình.
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![OpenCV](https://img.shields.io/badge/opencv-%23white.svg?logo=opencv&logoColor=white)](https://opencv.org/)
-[![Dlib](https://img.shields.io/badge/dlib-face--recognition-red)](http://dlib.net/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database-green)](https://supabase.com/)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-white.svg?logo=opencv&logoColor=white)](https://opencv.org/)
+[![Dlib](https://img.shields.io/badge/Dlib-Recognize-red.svg)](http://dlib.net/)
+[![TensorFlow Lite](https://img.shields.io/badge/TFLite-INT8-orange.svg)](https://www.tensorflow.org/lite)
+[![Supabase](https://img.shields.io/badge/Supabase-Sync-green.svg)](https://supabase.com/)
+[![License](https://img.shields.io/badge/License-MIT-purple.svg)]()
 
-Hệ thống giám sát tài xế (DMS) sử dụng trí tuệ nhân tạo (AI) để theo dõi trạng thái của người lái xe trong thời gian thực, nhằm phát hiện sớm các dấu hiệu mệt mỏi, ngủ gật hoặc mất tập trung để đưa ra cảnh báo kịp thời, giúp giảm thiểu rủi ro tai nạn giao thông.
+<div align="center">
+  <!-- Vị trí đặt ảnh chụp màn hình dự án thực tế -->
+  <img src="/home/nph/Documents/Driver-Drowsiness-Detection/assets/IOT18A-Group5.png" alt="DMS Preview" width="700"/>
+</div>
 
----
+## ✨ Tính Năng Nổi Bật
 
-## ✨ Tính Năng Nổi Bật (Key Features)
+- **👁️ Giám sát hành vi theo thời gian thực:** Phân tích dữ liệu EAR và MAR để phát hiện chính xác trạng thái nhắm mắt, ngủ gật và ngáp.
+- **📵 Cảnh báo mất tập trung:** Dựa trên các góc xoay đầu (Head Pose) để nhận diện khi tài xế không nhìn đường hoặc sử dụng điện thoại.
+- **🎯 Bám sát cá nhân hóa:** Tích hợp nhận diện Face ID độc lập qua cơ chế *Calibration* giúp điều chỉnh sai số cá nhân.
+- **⚡ Phản hồi siêu tốc với Edge-AI:** Triển khai bằng mô hình mạng Neural lượng tử (*INT8*) 8.7KB kết hợp chiến lược *Frame Skipping*, đảm bảo tối đa hiệu suất trên *Jetson Nano*.
+- **☁️ Đồng bộ đám mây lập tức:** Cập nhật báo cáo hành trình định kỳ và tự động upload video bằng chứng của tài xế lên hệ thống Supabase.
 
-*   **👁️ Phát Hiện Ngủ Gật (Drowsiness):** Theo dõi chỉ số EAR (Eye Aspect Ratio) để nhận diện trạng thái nhắm mắt quá lâu.
-*   **🥱 Nhận Diện Ngáp (Yawning):** Phân tích MAR (Mouth Aspect Ratio) để phát hiện hành vi ngáp thường xuyên, là dấu hiệu của sự mệt mỏi.
-*   **📵 Giám Sát Mất Tập Trung (Distraction):** Theo dõi tư thế đầu (Head Pose - Yaw, Pitch, Roll) để cảnh báo khi tài xế không nhìn đường hoặc sử dụng điện thoại.
-*   **🗣️ Nhận Diện Nói Chuyện (Talking):** Phân loại hành động nói chuyện để phân tích mức độ tập trung.
-*   **🔊 Cảnh Báo Âm Thanh Tiếng Việt:** Phát thông báo bằng giọng nói tự nhiên (gTTS/PyGame) khi phát hiện nguy cơ.
-*   **🛡️ Nhận Diện Driver Duy Nhất:** Sử dụng Face Recognition (Dlib) để chỉ theo dõi đúng khuôn mặt của tài xế.
-*   **🧠 Xử Lý Dự Đoán Trí Tuệ Nhân Tạo (AI-Driven):** Ưu tiên hoàn toàn đầu ra từ mô hình học sâu (TensorFlow) thay vì sử dụng luật cứng để ghi đè kết quả, giúp hệ thống hoạt động ổn định và chính xác hơn trong các tình huống thực tế.
-*   **⚡ Tối Ưu Tốc Độ Edge AI (Frame Skipping):** Tự động thiết lập xử lý chéo khung hình và chạy ở độ phân giải nén 320x320, tiết kiệm 70% lượng tính toán CPU và đảm bảo FPS cực mượt (Real-time) trên Jetson Nano.
-*   **⚖️ Lọc Nhiễu Chống Nhấp Nháy (Anti-Flicker):** Áp dụng Hysteresis để tránh việc AI chập chờn khi tài xế giữ nguyên một trạng thái (Ví dụ: há miệng ngáp lâu không bị ngắt quãng).
-*   **☁️ Đồng Bộ Cloud (Supabase):** Tự động tải báo cáo, ảnh chụp bằng chứng và clip video 3 giây.
-*   **🛠️ Cá Nhân Hóa (Calibration):** Chế độ hiệu chuẩn tự động trong 100 khung hình đầu tiên.
+## 🛠 Công Nghệ Sử Dụng
 
----
+- **Ngôn ngữ:** Python 3.8+
+- **Computer Vision:** OpenCV, Dlib, Imutils
+- **Machine Learning:** TensorFlow Lite
+- **Cloud & Storage:** Supabase (PostgreSQL / Buckets)
+- **Utilities:** PyGame, gTTS
 
-## ⚙️ Cấu Trúc Dự Án (Modular Architecture)
+## 🚀 Bắt Đầu Nhanh
 
-Dự án được thiết kế theo dạng module hóa để dễ dàng bảo trì và mở rộng:
-
-| Module | Chức năng chính |
-| :--- | :--- |
-| **`DriverDrowsinessDetection.py`** | Luồng thực thi chính (Main Entry), quản lý Camera và tích hợp các module. |
-| **`Backend.py`** | Quản lý kết nối **Supabase**. Đồng bộ dữ liệu hành trình và upload bằng chứng (ảnh/video). |
-| **`AlertHandler.py`** | Bộ quản lý sự kiện. Theo dõi thời gian, ghi hình MP4 và kích hoạt cảnh báo âm thanh. |
-| **`Calibration.py`** | Hiệu chuẩn các chỉ số cá nhân hóa (Baseline) cho từng tài xế. |
-| **`PredictMaker.py`** | Core AI: Sử dụng mô hình TFLite (hoặc thuật toán Heuristic fallback) để phân loại trạng thái. |
-| **`Features/EAR.py` & `MAR.py`** | Tính toán tỷ lệ mắt (Eye Aspect Ratio) và miệng (Mouth Aspect Ratio). |
-| **`Features/HeadPose.py`** | Ước tính các góc quay của đầu (pitch, yaw, roll) để phát hiện nhìn lệch hướng. |
-| **`UIHelper.py`** | Hiển thị Overlay thông tin, đồ thị trạng thái AI và đồng hồ lên màn hình. |
-
----
-
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
-
-*   **Ngôn ngữ:** Python 3.
-*   **Thư viện Thị giác máy tính:** OpenCV, Dlib.
-*   **AI/Inference:** TFLite (TensorFlow Lite) hoặc Heuristic algorithms.
-*   **Âm thanh:** Pygame (để phát âm thanh), gTTS (để tạo file audio).
-*   **Cơ sở dữ liệu & Lưu trữ:** Cloud Supabase (PostgreSQL & Storage).
-*   **Bảo mật:** `python-dotenv` quản lý API Keys.
-
----
-
-## 🚀 Hướng Dẫn Cài Đặt (Installation)
-
-### 1. Yêu cầu hệ thống
-- Linux/MacOS/Windows (Khuyến nghị Linux cho hiệu năng tốt nhất với Dlib).
-- Python 3.8 trở lên.
-- Camera 720p hoặc cao hơn.
-
-### 2. Cài đặt thư viện
+### 1. Cài đặt các thư viện phụ thuộc
+Cài đặt trực tiếp qua `pip` trong môi trường ảo của bạn:
 ```bash
-pip install opencv-python numpy dlib pygame gtts supabase python-dotenv imutils scipy
+pip install opencv-python numpy dlib pygame gtts supabase python-dotenv imutils scipy tflite-runtime
 ```
-*(Lưu ý: Để ứng dụng chạy được Mô hình AI TFLite thay vì Thuật toán dự phòng, bạn cần cài đặt thêm thư viện TensorFlow hoặc tflite-runtime)*:
-- **Trên máy tính (PC):** `pip install tensorflow`
-- **Trên thiết bị nhúng (Jetson Nano/Raspberry Pi):** `pip install tflite-runtime`
 
-*(Nếu cài đặt `dlib` gặp lỗi, hãy đảm bảo bạn đã cài `cmake` và `build-essential` trên Linux)*.
-
-### 3. Tải các Model cần thiết
-Bạn cần lưu các file sau vào thư mục `dlib_shape_predictor/`:
-- `shape_predictor_68_face_landmarks.dat`: Để trích xuất 68 điểm mốc khuôn mặt.
-- `dlib_face_recognition_resnet_model_v1.dat`: (Tùy chọn) Để nhận diện khuôn mặt tài xế.
-
-### 4. Cấu hình biến môi trường
-Sao chép file mẫu và điền thông tin của bạn:
+### 2. Chuẩn bị Models & Cấu hình Cloud
+- Tải weights cho Dlib (`shape_predictor_68_face_landmarks.dat` và `dlib_face_recognition_resnet_model_v1.dat`) và đặt vào folder `dlib_shape_predictor/`.
+- Tạo file `.env` từ `.env.example` và thiết lập kết nối:
 ```bash
 cp .env.example .env
+# Chỉnh sửa file .env để điền SUPABASE_URL và SUPABASE_KEY
 ```
-Mở file `.env` và điền `SUPABASE_URL` và `SUPABASE_KEY` từ trang quản trị dự án Supabase của bạn.
 
----
-
-## 🎮 Cách Chạy Ứng Dụng (Running)
-
-Mở terminal và chạy lệnh:
+### 3. Vận hành hệ thống
+Khởi động hệ thống tại trung tâm giám sát bằng tập lệnh chính:
 ```bash
 python3 DriverDrowsinessDetection.py
 ```
 
-**Quá trình hoạt động:**
-1.  **Giai đoạn 1 (Calibration - 100 khung hình đầu):** Hệ thống sẽ yêu cầu tài xế nhìn thẳng, mở mắt bình thường để học các chỉ số cơ bản.
-2.  **Giai đoạn 2 (Monitoring):** Sau khi hoàn tất hiệu chuẩn, hệ thống bắt đầu giám sát và đưa ra cảnh báo nếu phát hiện trạng thái ngủ gật (>1.5s), ngáp, hoặc mất tập trung.
+## 💻 Cách Sử Dụng 
 
----
+Sau khi chạy phần mềm, quá trình giám sát sẽ tự động bắt đầu:
+1. **Giao thức học ban đầu:** Trong vài giây đầu, người dùng giữ mặt hướng thẳng để hệ thống đo đạc baseline chuẩn (*Calibration*).
+2. **Kích hoạt tự động:** Mọi hành vi sai phạm nếu diễn ra đủ lâu sẽ báo động cảnh báo với âm thanh và ghi lại đoạn clip 3 giây.
 
-## 📊 Luồng Xử Lý Dữ Liệu (Execution Flow)
-
-1.  **Capture:** Nhận hình ảnh từ camera.
-2.  **Verify:** Nhận diện đúng tài xế (nếu được cấu hình).
-3.  **Process:** Dùng Dlib lấy 68 landmarks.
-4.  **Extract:** Tính toán EAR, MAR, Head Pose.
-5.  **Infer:** AI (TFLite/Heuristic) phân loại trạng thái: *Normal, Drowsy, Yawning, Distracted, Talking*.
-6.  **Smooth:** Lọc nhiễu trạng thái bằng giải thuật "Majority Voting" qua 3 khung hình.
-7.  **Alert:** Nếu trạng thái nguy hiểm kéo dài, kích hoạt cảnh báo âm thanh và ghi hình.
-8.  **Sync:** Tải dữ liệu lên Supabase mỗi 30 giây.
-
----
-
-## 🧠 Huấn Luyện Lại Mô Hình (Training AI)
-
-Dự án sử dụng mô hình **Dense Network 6-features** (không phải CNN ảnh) được lượng tử hóa INT8, siêu nhẹ (~8.7KB) phù hợp chạy trên Jetson Nano.
-
-### Kiến trúc Model
-
-Mô hình nhận đầu vào là **6 đặc trưng thống kê** trích xuất từ chuỗi thời gian:
-
-| # | Feature | Mô tả | Scale Factor |
-|---|---------|-------|--------------|
-| 1 | `ear_mean` | Trung bình EAR (so với baseline) | ×100 |
-| 2 | `mar_mean` | Trung bình MAR (so với baseline) | ×50 |
-| 3 | `mar_variance` | Biến thiên đạo hàm MAR | ×500 |
-| 4 | `pitch_var` | Biến thiên pitch (gật đầu) | ×1 |
-| 5 | `yaw_mean_abs` | Trung bình |yaw| (quay ngang) | ×1 |
-| 6 | `pitch_raw_mean` | Trung bình pitch thô (lên/xuống) | ×1 |
-
-> **Lưu ý:** Features được nhân với hệ số Scale trước khi đưa vào model để INT8 quantization không bị mất độ chính xác. Hệ số phải **khớp** giữa `TrainAI/train_model.py` và `PredictMaker.py`.
-
-### Cách chạy Script
-
-Yêu cầu cài đặt thêm `tensorflow`:
-```bash
-pip install tensorflow
-cd TrainAI
-python3 train_model.py
+*Ví dụ thay đổi thông số Buffer cho AI Engine (*tại file nhánh `DriverDrowsinessDetection.py`*):*
+```python
+# Nhỏ số window_size -> Hệ thống sẽ phản hồi nhạy hơn (phù hợp device cấu hình yếu)
+decision_maker = DecisionMaker(window_size=15, model_path="Models/dms_model_int8.tflite")
 ```
-Sau khi hoàn tất, file TFLite được xuất ra tại `Models/dms_model_int8.tflite` sẵn sàng để nhúng vào hệ thống Edge.
 
----
+## 🛣 Lộ Trình (Roadmap)
 
-## 📁 Dữ Liệu Cảnh Báo (Alert Evidence)
-Các bằng chứng bao gồm ảnh chụp màn hình và video clip 3 giây sẽ được lưu tạm tại `temp_alert/` và tự động xóa sau khi đã tải lên thành công lên Supabase Storage.
+- [x] Phát hiện các hành vi tiêu biểu của tài xế (Ngáp, Cúi, Nhắm mắt).
+- [x] Train và lượng tử hoá thuật toán INT8.
+- [x] Triển khai Serverless Cloud (Supabase).
+- [ ] Mở rộng giao diện điều hướng (Web Dashboard cho trung tâm quản trị).
+- [ ] Thích ứng Camera Hồng ngoại (IR) sử dụng trong điều kiện thiều sáng vào ban đêm.
 
----
+## 🤝 Đóng Góp & Giấy Phép
 
-## 📝 Lưu Ý Về Model AI
-Dự án được tối ưu hóa cho **Jetson Nano** hoặc các thiết bị cấu hình thấp. Model sử dụng kiến trúc **Dense Network** (6 → BN → 64 → BN → 32 → 5) với tổng ~3,000 tham số, kích thước chỉ **~8.7KB** sau khi lượng tử hóa INT8. Nếu không tìm thấy file `Models/dms_model_int8.tflite`, hệ thống sẽ tự động chuyển sang giải thuật **Heuristic Fallback** mà vẫn đảm bảo độ chính xác cơ bản.
+Mọi đóng góp (*Pull requests, Issues*) đều được nhiệt liệt chào đón! Hãy mở Issue đề xuất giải pháp nếu bạn có nhu cầu muốn tạo những tính năng lớn.
+Dự án được phân phối theo tiêu chuẩn **MIT License**. Mọi cá nhân đều được quyền chỉnh sửa và tích hợp vào dự án của riêng mình.
 
 ---
 *Phát triển bởi [IoT-Group 5-K18-IUH] - 2026*

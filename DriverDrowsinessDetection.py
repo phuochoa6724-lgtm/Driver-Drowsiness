@@ -9,14 +9,12 @@ import numpy as np
 import threading
 from collections import deque
 
-# --- IMPORT CÁC MODULE CUSTOM CŨ ---
+# --- IMPORT CÁC MODULE TÙY CHỈNH ---
 from Features.EAR import eye_aspect_ratio
 from Features.MAR import mouth_aspect_ratio
 from Features.HeadPose import getHeadTiltAndCoords
 from Calibration import Calibrator
 from PredictMaker import DecisionMaker
-
-# --- IMPORT CÁC MODULE MỚI SAU KHI REFACTOR ---
 from Backend import BackendManager
 from AlertHandler import AlertHandler
 from UIHelper import UIHelper
@@ -37,11 +35,11 @@ face_encoder = dlib.face_recognition_model_v1('./dlib_shape_predictor/dlib_face_
 
 # Cấu hình logic AI DMS
 calibrator = Calibrator(required_frames=100) 
-# Giảm window_size xuống 15 (tương đương ~2-3 giây trên Jetson Nano)
-# để tính trung bình cộng EAR nhanh hơn, giảm hẳn độ trễ cập nhật.
+# Cài đặt window_size là 15 (tương đương ~2-3 giây trễ trên Jetson Nano)
+# giúp phản hồi cập nhật các trạng thái (EAR,...) nhanh nhạy hơn.
 decision_maker = DecisionMaker(window_size=15, model_path="Models/dms_model_int8.tflite")
 
-# Tham số luồng video (Giảm tối đa xuống 320 để Jetson Nano xử lý nhanh gấp đôi)
+# Tham số kích thước luồng video (sử dụng 320x320 để tối ưu tốc độ xử lý trên thiết bị nhúng)
 frame_width, frame_height = 320, 320
 image_points = np.zeros((6, 2), dtype="double")
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
@@ -51,7 +49,7 @@ mStart, mEnd = 49, 68
 # Các biến quản lý thời gian
 frame_count = 0
 last_sync_time = time.time()
-calibration_interval = 60 # (Đã vô hiệu hóa tự động recalibration theo yêu cầu)
+calibration_interval = 60 # Khoảng thời gian cho hiệu chuẩn lại (Hiện tại vô hiệu hóa theo yêu cầu dự án)
 calibration_voice_played = False # Cờ kiểm soát việc phát âm thanh nhắc nhở
 
 # Buffer lưu trữ frame để xuất video cảnh báo (khoảng 2-4 giây)
@@ -194,7 +192,7 @@ try:
                                    alert_handler.total_drowsy_count,
                                    alert_handler.total_distracted_count)).start()
             last_sync_time = time.time()
-            # (Vô hiệu hóa logic Re-Calibration tự động ở đây)
+            # Không kích hoạt lại tiến trình Calibration tự động tại đây để tránh nhiễu hệ thống đang giám sát.
 
         # Lưu frame vào buffer và hiển thị lên cửa sổ chính
         frame_buffer.append(frame.copy())

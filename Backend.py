@@ -54,7 +54,7 @@ class BackendManager:
         if eye_time > 15.0 or yawns > 10: level = "Khẩn cấp"
         elif eye_time > 3.0 or yawns > 2 or head_tilts > 3 or distracted_count > 3: level = "Cảnh báo"
         
-        # Loại bỏ trường total_distracted khỏi payload tĩnh (tránh lỗi Schema DB PGRST204)
+        # Đóng gói dữ liệu số liệu hành trình (payload) để chuẩn bị đồng bộ
         return {
             "total_yawn_count": int(yawns),
             "total_head_tilt": int(head_tilts),
@@ -94,8 +94,7 @@ class BackendManager:
 
     def upload_alert(self, event_type, severity, duration, video_path):
         """
-        Tải video cảnh báo lên Storage và lưu thông tin vào bảng alerts.
-        (Đã loại bỏ tính năng chụp ảnh - chỉ giữ lại video clip 3s)
+        Tải video cảnh báo lên kho lưu trữ Storage và lưu thông tin vào bảng alerts.
         """
         if not self.client: return
         try:

@@ -32,7 +32,7 @@ class DecisionMaker:
         self.pitch_raw_buffer = deque(maxlen=window_size)  # Góc pitch thô có dấu (để phân biệt nhìn lên/xuống)
         
         # BỘ LỌC LÀM MƯỢT (Smoothing): Lưu lịch sử 3 trạng thái gần nhất để lấy số đông
-        # (Giảm từ 5 xuống 3 để tính phản hồi của Jetson rơi vào mức cực nhanh ~0.5s)
+        # giúp phản hồi cực nhanh (~0.5s) trên thiết bị nhúng (Jetson Nano).
         self.smoothing_window = 3
         self.state_history = deque(maxlen=self.smoothing_window)
         
@@ -60,10 +60,10 @@ class DecisionMaker:
                       ear_baseline=0.0, mar_baseline=0.0, pitch_raw_baseline=0.0):
         """
         Cập nhật dữ liệu vào Buffer trượt theo thời gian.
-        - pitch: góc phái sinh từ head_tilt_degree (cũ)
+        - pitch: góc nghiêng đầu (độ)
         - yaw: góc quay ngang trái/phải (độ)
         - pitch_raw: góc pitch thô có dấu (độ), âm = nhìn lên, dương = nhìn xuống
-        - pitch_raw_baseline: giá trị pitch_raw khi nhìn thẳng (từ calibration)
+        - pitch_raw_baseline: giá trị pitch_raw chuẩn khi nhìn thẳng (từ quá trình Calibration)
         """
         self.ear_buffer.append(ear - ear_baseline)
         self.mar_buffer.append(mar - mar_baseline)
