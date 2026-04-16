@@ -12,8 +12,7 @@ class AlertHandler:
     """
     def __init__(self, backend):
         self.backend = backend
-        # Tạo thư mục lưu tạm cho ảnh và video cảnh báo
-        os.makedirs("temp_alert/images", exist_ok=True)
+        # Tạo thư mục lưu tạm cho video cảnh báo
         os.makedirs("temp_alert/videos", exist_ok=True)
         
         # Trạng thái cảnh báo hiện tại (Mặc định là Normal)
@@ -120,18 +119,14 @@ class AlertHandler:
                 self.normal_grace_start = None
 
     def _trigger_alert(self, event_type, duration, current_frame, frames):
-        """Kích hoạt việc lưu file và gửi lên backend (chạy ngầm)."""
+        """Kích hoạt việc lưu video và gửi lên backend (chạy ngầm)."""
         ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        img_p = f"temp_alert/images/A_{ts}.jpg"
         vid_p = f"temp_alert/videos/V_{ts}.mp4"
         
-        # Lưu ảnh bằng chứng (Frame hiện tại)
-        cv2.imwrite(img_p, current_frame)
-        
         # Chạy luồng xử lý video (MP4) và upload ngầm để không gây giật lag Camera
-        threading.Thread(target=self._save_and_upload, args=(event_type, duration, frames, img_p, vid_p)).start()
+        threading.Thread(target=self._save_and_upload, args=(event_type, duration, frames, vid_p)).start()
 
-    def _save_and_upload(self, event_type, duration, frames, img_p, vid_p):
+    def _save_and_upload(self, event_type, duration, frames, vid_p):
         """Lưu video MP4 từ danh sách frame và yêu cầu backend tải lên Supabase."""
         if frames:
             h, w, _ = frames[0].shape
@@ -141,5 +136,5 @@ class AlertHandler:
                 out.write(f)
             out.release()
             
-        # Gọi backend để thực hiện upload ảnh, video và lưu database
-        self.backend.upload_alert(event_type.lower(), "danger", duration, img_p, vid_p)
+        # Gọi backend để thực hiện upload video và lưu database
+        self.backend.upload_alert(event_type.lower(), "danger", duration, vid_p)

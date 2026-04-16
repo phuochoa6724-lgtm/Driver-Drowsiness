@@ -92,18 +92,17 @@ class BackendManager:
         except Exception as e:
             print(f"[ERROR] Close Session: {e}")
 
-    def upload_alert(self, event_type, severity, duration, image_path, video_path):
+    def upload_alert(self, event_type, severity, duration, video_path):
         """
-        Tải các phương tiện cảnh báo (ảnh, video) lên Storage và lưu thông tin vào bảng alerts.
+        Tải video cảnh báo lên Storage và lưu thông tin vào bảng alerts.
+        (Đã loại bỏ tính năng chụp ảnh - chỉ giữ lại video clip 3s)
         """
         if not self.client: return
         try:
-            # 1. Tải tệp tin lên Storage bucket 'alerts_media'
-            self.client.storage.from_("alerts_media").upload(image_path, image_path)
+            # 1. Tải video lên Storage bucket 'alerts_media'
             self.client.storage.from_("alerts_media").upload(video_path, video_path)
             
-            # 2. Lấy URL công khai của các tệp tin đã tải lên
-            img_url = self.client.storage.from_("alerts_media").get_public_url(image_path)
+            # 2. Lấy URL công khai của video đã tải lên
             vid_url = self.client.storage.from_("alerts_media").get_public_url(video_path)
 
             # 3. Chèn bản ghi dữ liệu vào bảng SQL 'alerts'
@@ -113,7 +112,6 @@ class BackendManager:
                 "alert_type": event_type,
                 "severity": severity,
                 "duration_seconds": float(duration),
-                "image_url": img_url,
                 "video_url": vid_url,
                 "created_at": datetime.now().isoformat()
             }

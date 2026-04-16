@@ -1,10 +1,18 @@
 import cv2
+import time
 from datetime import datetime
 
 class UIHelper:
     """
     Lớp hỗ trợ hiển thị thông tin trực quan lên khung hình (Frame Overlay).
     """
+    def __init__(self):
+        # === CACHE CHO ĐỒNG HỒ ===
+        # Lưu chuỗi thời gian đã format để tránh gọi datetime.now() + strftime() mỗi frame
+        self._cached_clock_text = ""
+        # Thời điểm cập nhật lần cuối (epoch seconds)
+        self._last_clock_update = 0
+
     def draw_status(self, frame, state, color):
         """
         Hiển thị trạng thái AI hiện tại (Normal, Drowsy, Distracted, Yawning).
@@ -27,9 +35,15 @@ class UIHelper:
     def draw_clock(self, frame):
         """
         Hiển thị đồng hồ thời gian thực ở góc dưới bên phải.
+        TỐI ƯU: Chỉ gọi datetime.now() + strftime() mỗi 1 giây,
+        các frame còn lại dùng lại chuỗi đã cache để tiết kiệm CPU.
         """
-        current_dt = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-        cv2.putText(frame, current_dt, (330, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        now = time.time()
+        # Chỉ cập nhật chuỗi thời gian khi đã qua ít nhất 1 giây
+        if now - self._last_clock_update >= 1.0:
+            self._cached_clock_text = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+            self._last_clock_update = now
+        cv2.putText(frame, self._cached_clock_text, (330, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
     def draw_calibration_progress(self, frame, progress):
         """

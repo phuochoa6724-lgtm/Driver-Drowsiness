@@ -1,6 +1,6 @@
 import numpy as np
 from collections import deque
-import cv2 # Nhập thư viện xử lý ảnh OpenCV (Computer Vision)
+
 import os
 
 try:
@@ -38,6 +38,11 @@ class DecisionMaker:
         
         # Danh sách các nhãn phân loại đầu ra của hệ thống
         self.labels = ["Normal", "Drowsy", "Yawning", "Talking", "Distracted"]
+        
+        # === HẶNG SỐ SCALE FEATURES ===
+        # Nhân features lên dải giá trị lớn hơn cho INT8 quantization (khớp với train_model.py)
+        # THỨ TỰ: [ear_mean, mar_mean, mar_var, pitch_var, yaw_abs, pitch_raw_mean]
+        self.feature_scale = np.array([100.0, 50.0, 500.0, 1.0, 1.0, 1.0], dtype=np.float32)
         
         self.interpreter = None
         # Thiết lập TFLite Interpreter nếu có tflite và file tồn tại
@@ -142,7 +147,10 @@ class DecisionMaker:
         # 1. Gọi mạng Neural TFLite nếu có sẵn
         if self.interpreter is not None:
             try:
-                self.interpreter.set_tensor(self.input_details[0]['index'], features)
+                # Nhân features với FEATURE_SCALE trước khi truyền vào model TFLite
+                # (Model được train với features đã scale để INT8 không mất độ chính xác)
+                scaled_features = features * self.feature_scale
+                self.interpreter.set_tensor(self.input_details[0]['index'], scaled_features)
                 self.interpreter.invoke()
                 predictions = self.interpreter.get_tensor(self.output_details[0]['index'])
                 predicted_idx = np.argmax(predictions[0])
@@ -159,7 +167,7 @@ class DecisionMaker:
         # Lưu trạng thái thô vào lịch sử
         self.state_history.append(state)
         
-        # Lấy trạng thái xuất hiện nhiều nhất trong smoothing_window (15 frames)
+        # Lấy trạng thái xuất hiện nhiều nhất trong smoothing_window (3 frames)
         if len(self.state_history) > 0:
             most_common_state = max(set(self.state_history), key=list(self.state_history).count)
             return most_common_state
